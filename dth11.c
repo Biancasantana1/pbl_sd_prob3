@@ -20,7 +20,7 @@
 
 //Data pin 7
 #define MAXTIMINGS 85
-#define DHTPIN 7
+#define DHTPIN 0
 /* Caso desejar utilizar outro broker MQTT, substitua o endereco abaixo */
 #define MQTT_ADDRESS   "tcp://iot.eclipse.org"
 /* Substitua este por um ID unico em sua aplicacao */
@@ -32,7 +32,7 @@
 
 int lcd;
 int dht11_dat[5] = {0, 0, 0, 0, 0};
-int intervalo_medicao = 2000; //em ms
+int intervalo_medicao = 0; //em ms
 int temperatura = 0;
 int umidade = 0;
 int umidadeDecimal = 0;
@@ -66,72 +66,76 @@ int umidadeDecimal = 0;
 
 void read_dht11_dat()
 {
-        // uint8_t laststate = HIGH;
-        // uint8_t counter = 0;
-        // uint8_t j = 0, i;
-        // float f; 
 
-        // dht11_dat[0] = dht11_dat[1] = dht11_dat[2] = dht11_dat[3] = dht11_dat[4] = 0;
+        uint8_t laststate = HIGH;
+        uint8_t counter = 0;
+        uint8_t j = 0, i;
+        float f; 
 
-        // pinMode(DHTPIN, OUTPUT);
-        // digitalWrite(DHTPIN, LOW);
-        // delay(18);
+        dht11_dat[0] = dht11_dat[1] = dht11_dat[2] = dht11_dat[3] = dht11_dat[4] = 0;
+        wiringPiSetup();
+        pinMode(DHTPIN, OUTPUT);
+        digitalWrite(DHTPIN, LOW);
+        delay(18);
         
-        // digitalWrite(DHTPIN, HIGH);
-        // delayMicroseconds(40);
+        digitalWrite(DHTPIN, HIGH);
+        delayMicroseconds(50);
         
-        // pinMode(DHTPIN, INPUT);
+        pinMode(DHTPIN, INPUT);
 
-        // for (i = 0; i < MAXTIMINGS; i++)
-        // {
-        //         counter = 0;
-        //         while (digitalRead(DHTPIN) == laststate)
-        //         {
-        //                 counter++;
-        //                 delayMicroseconds(1);
-        //                 if (counter == 255)
-        //                 {
-        //                         break;
-        //                 }
-        //         }
-        //         laststate = digitalRead(DHTPIN);
+        for (i = 0; i < MAXTIMINGS; i++)
+        {
+                counter = 0;
+                while (digitalRead(DHTPIN) == laststate)
+                {
+                        counter++;
+                        delayMicroseconds(1);
+                        if (counter == 255)
+                        {
+                                break;
+                        }
+                }
+                laststate = digitalRead(DHTPIN);
 
-        //         if (counter == 255)
-        //                 break;
+                if (counter == 255)
+                        break;
 
-        //         if ((i >= 4) && (i % 2 == 0))
-        //         {
-        //                 dht11_dat[j / 8] <<= 1;
-        //                 if (counter > 16)
-        //                         dht11_dat[j / 8] |= 1;
-        //                 j++;
-        //         }
-        //  }
+                if ((i >= 4) && (i % 2 == 0))
+                {
+                        dht11_dat[j / 8] <<= 1;
+                        if (counter > 16)
+                                dht11_dat[j / 8] |= 1;
+                        j++;
+                }
+         }
 
-        // if ((j >= 40) && (dht11_dat[4] == ((dht11_dat[0] + dht11_dat[1] + dht11_dat[2] + dht11_dat[3]) & 0xFF)))
-        // {
-        //         f = dht11_dat[2] * 9. / 5. + 32;
+        if ((j >= 40) && (dht11_dat[4] == ((dht11_dat[0] + dht11_dat[1] + dht11_dat[2] + dht11_dat[3]) & 0xFF)))
+        {
+                f = dht11_dat[2] * 9. / 5. + 32;
 
-        //         dht11_dat[2] = rand() % 100// Celsius
-        //         dht11_dat[0] = rand() % 100// Umidade
-        //         dht11_dat[1] = rand() % 100// Umidade decicmal
+                // dht11_dat[2] = rand() % 100// Celsius
+                // dht11_dat[0] = rand() % 100// Umidade
+                // dht11_dat[1] = rand() % 100// Umidade decicmal
+                temperatura = dht11_dat[2];
+                umidade = dht11_dat[0]; // Umidade
+                umidadeDecimal = dht11_dat[1];
+                printf("Humidity: %d.%d %%\n", dht11_dat[0], dht11_dat[1]);
+                // lcdPosition(lcd, 0, 0);
+                // lcdPrintf(lcd, "Humidity: %d.%d %%\n", dht11_dat[0], dht11_dat[1]);
 
-        //         lcdPosition(lcd, 0, 0);
-        //         lcdPrintf(lcd, "Humidity: %d.%d %%\n", dht11_dat[0], dht11_dat[1]);
+                // lcdPosition(lcd, 0, 1);
+                printf("Temp: %d.0 C", dht11_dat[2]); //Uncomment for Celsius
+                //lcdPrintf(lcd, "Temp: %.1f F", f); //Comment out for Celsius
+        } 
 
-        //         lcdPosition(lcd, 0, 1);
-        //         lcdPrintf(lcd, "Temp: %d.0 C", dht11_dat[2]); //Uncomment for Celsius
-        //         //lcdPrintf(lcd, "Temp: %.1f F", f); //Comment out for Celsius
-        // }
-
-        temperatura = dht11_dat[2] = rand() % 100;// Celsius
-        umidade = dht11_dat[0] = rand() % 100;// Umidade
-        umidadeDecimal = dht11_dat[1] = rand() % 100;// Umidade decicmal
-        lcdPosition(lcd, 0, 0);
-        lcdPrintf(lcd, "H: %d.%d %%\n", umidade, umidadeDecimal);
-        //printf("H: %d.%d %%\n", umidade, umidadeDecimal);
-        lcdPosition(lcd, 0, 1);
-        lcdPrintf(lcd, "Temp: %d.0 C", temperatura);
+        // temperatura = dht11_dat[2] = rand() % 100;// Celsius
+        // umidade = dht11_dat[0] = rand() % 100;// Umidade
+        // umidadeDecimal = dht11_dat[1] = rand() % 100;// Umidade decicmal
+        // lcdPosition(lcd, 0, 0);
+        // lcdPrintf(lcd, "H: %d.%d %%\n", umidade, umidadeDecimal);
+        // //printf("H: %d.%d %%\n", umidade, umidadeDecimal);
+        // lcdPosition(lcd, 0, 1);
+        // lcdPrintf(lcd, "Temp: %d.0 C", temperatura);
         //printf("Temp: %d.0 C", temperatura);       
         
         //lcdPrintf(lcd, "Temp: %.1f F", f); //Comment out for Celsius
@@ -146,37 +150,39 @@ void *getMeasurement(){
 }
 
 void mostrarMedidas(){
+        lcdClear(lcd);
         lcdPosition(lcd, 0, 0);
-        lcdPrintf(lcd, "H: %d.%d %%\n", umidade, umidadeDecimal);
+        lcdPrintf(lcd, "H: %d.%d %%", umidade, umidadeDecimal);
         lcdPosition(lcd, 0, 1);
         lcdPrintf(lcd, "Temp: %d.0 C", temperatura);
 }
 
 void mostrarSelecaoDeIntervalo(){
+        lcdClear(lcd);
         lcdPosition(lcd, 0, 0);
-        lcdPrintf(lcd, "Intervalo de Medicao (em ms)");
+        lcdPrintf(lcd, "Medicao (em ms)\n");
         lcdPosition(lcd, 0, 1);
         lcdPrintf(lcd, "%d ms", intervalo_medicao);
 }
 
 int main(void)
-{		
-	// int rc;
-	// MQTTClient_connectOptions conn_opts = MQTTClient_connectOptions_initializer;
+{               
+        // int rc;
+        // MQTTClient_connectOptions conn_opts = MQTTClient_connectOptions_initializer;
 
-	// /* Inicializacao do MQTT (conexao & subscribe) */
-	// MQTTClient_create(&client, MQTT_ADDRESS, CLIENTID, MQTTCLIENT_PERSISTENCE_NONE, NULL);
-	// MQTTClient_setCallbacks(client, NULL, NULL, on_message, NULL);
+        // /* Inicializacao do MQTT (conexao & subscribe) */
+        // MQTTClient_create(&client, MQTT_ADDRESS, CLIENTID, MQTTCLIENT_PERSISTENCE_NONE, NULL);
+        // MQTTClient_setCallbacks(client, NULL, NULL, on_message, NULL);
 
-	// rc = MQTTClient_connect(client, &conn_opts);
+        // rc = MQTTClient_connect(client, &conn_opts);
 
-	// if (rc != MQTTCLIENT_SUCCESS)
-	// {
-	// 	printf("\n\rFalha na conexao ao broker MQTT. Erro: %d\n", rc);
-	// }
-
-	// MQTTClient_subscribe(client, MQTT_SUBSCRIBE_TOPIC, 0);        
+        // if (rc != MQTTCLIENT_SUCCESS)
+        // {
+        //      printf("\n\rFalha na conexao ao broker MQTT. Erro: %d\n", rc);
+        // }
         wiringPiSetup();
+
+        // MQTTClient_subscribe(client, MQTT_SUBSCRIBE_TOPIC, 0);        
         lcd = lcdInit (2, 16, 4, LCD_RS, LCD_E, LCD_D4, LCD_D5, LCD_D6, LCD_D7, 0, 0, 0, 0);
 
         pthread_t tid;
@@ -191,12 +197,11 @@ int main(void)
 
 
         while(1){
-                if(digitalRead(BUTTON_0) == LOW){
-                        printf("%d", modo); 
+                if(digitalRead(BUTTON_0) == 0){
                         modo = !modo;                                               
                         delay(20);
-                        while(digitalRead(7) == LOW); // aguarda enquato chave ainda esta pressionada           
-                        delay(20); 
+                        while(digitalRead(BUTTON_0) == 0); // aguarda enquato chave ainda esta pressionada           
+                        delay(20);
                 }
                 if(modo == 1) mostrarMedidas();
                 if (modo == 0) mostrarSelecaoDeIntervalo();
