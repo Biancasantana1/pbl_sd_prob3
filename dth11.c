@@ -27,6 +27,9 @@
 #define CLIENTID       "MQTTCClientID"
 //MQTTClient client;
 
+#define MQTT_PUBLISH_TOPIC     "tp_03_g04/#"
+#define MQTT_SUBSCRIBE_TOPIC   "tp_03_g04/intervalo"
+
 // void publish(MQTTClient client, char* topic, char* payload);
 // int on_message(void *context, char *topicName, int topicLen, MQTTClient_message *message);
 
@@ -54,10 +57,11 @@ int umidadeDecimal = 0;
 //     char* payload = message->payload;
 
 //     /* Mostra a mensagem recebida */
-//     printf("Mensagem recebida! \n\rTopico: %s Mensagem: %s\n", topicName, payload);
+//     //printf("Mensagem recebida! \n\rTopico: %s Mensagem: %s\n", topicName, payload);
 
 //     /* Faz echo da mensagem recebida */
 //     publish(client, MQTT_PUBLISH_TOPIC, payload);
+//     intervalo_medicao = payload;    
 
 //     MQTTClient_freeMessage(&message);
 //     MQTTClient_free(topicName);
@@ -112,33 +116,12 @@ void read_dht11_dat()
         if ((j >= 40) && (dht11_dat[4] == ((dht11_dat[0] + dht11_dat[1] + dht11_dat[2] + dht11_dat[3]) & 0xFF)))
         {
                 f = dht11_dat[2] * 9. / 5. + 32;
-
-                // dht11_dat[2] = rand() % 100// Celsius
-                // dht11_dat[0] = rand() % 100// Umidade
-                // dht11_dat[1] = rand() % 100// Umidade decicmal
+               
                 temperatura = dht11_dat[2];
-                umidade = dht11_dat[0]; // Umidade
+                umidade = dht11_dat[0];
                 umidadeDecimal = dht11_dat[1];
-                printf("Humidity: %d.%d %%\n", dht11_dat[0], dht11_dat[1]);
-                // lcdPosition(lcd, 0, 0);
-                // lcdPrintf(lcd, "Humidity: %d.%d %%\n", dht11_dat[0], dht11_dat[1]);
-
-                // lcdPosition(lcd, 0, 1);
-                printf("Temp: %d.0 C", dht11_dat[2]); //Uncomment for Celsius
-                //lcdPrintf(lcd, "Temp: %.1f F", f); //Comment out for Celsius
+                //PERSISTIR OS DADOS
         } 
-
-        // temperatura = dht11_dat[2] = rand() % 100;// Celsius
-        // umidade = dht11_dat[0] = rand() % 100;// Umidade
-        // umidadeDecimal = dht11_dat[1] = rand() % 100;// Umidade decicmal
-        // lcdPosition(lcd, 0, 0);
-        // lcdPrintf(lcd, "H: %d.%d %%\n", umidade, umidadeDecimal);
-        // //printf("H: %d.%d %%\n", umidade, umidadeDecimal);
-        // lcdPosition(lcd, 0, 1);
-        // lcdPrintf(lcd, "Temp: %d.0 C", temperatura);
-        //printf("Temp: %d.0 C", temperatura);       
-        
-        //lcdPrintf(lcd, "Temp: %.1f F", f); //Comment out for Celsius
 }
 
 void *getMeasurement(){
@@ -157,18 +140,18 @@ void mostrarMedidas(){
         lcdPrintf(lcd, "Temp: %d.0 C", temperatura);
 }
 
-void mostrarSelecaoDeIntervalo(){
+void mostrarSelecaoDeIntervalo(int tempo){
         lcdClear(lcd);
         lcdPosition(lcd, 0, 0);
-        lcdPrintf(lcd, "Medicao (em ms)\n");
+        lcdPrintf(lcd, "Medicao (em ms)");
         lcdPosition(lcd, 0, 1);
-        lcdPrintf(lcd, "%d ms", intervalo_medicao);
+        lcdPrintf(lcd, "%d ms", tempo);
 }
 
 int main(void)
 {               
         // int rc;
-        // MQTTClient_connectOptions conn_opts = MQTTClient_connectOptions_initializer;
+        //MQTTClient_connectOptions conn_opts = MQTTClient_connectOptions_initializer;
 
         // /* Inicializacao do MQTT (conexao & subscribe) */
         // MQTTClient_create(&client, MQTT_ADDRESS, CLIENTID, MQTTCLIENT_PERSISTENCE_NONE, NULL);
@@ -182,7 +165,7 @@ int main(void)
         // }
         wiringPiSetup();
 
-        // MQTTClient_subscribe(client, MQTT_SUBSCRIBE_TOPIC, 0);        
+        //MQTTClient_subscribe(client, MQTT_SUBSCRIBE_TOPIC, 0);        
         lcd = lcdInit (2, 16, 4, LCD_RS, LCD_E, LCD_D4, LCD_D5, LCD_D6, LCD_D7, 0, 0, 0, 0);
 
         pthread_t tid;
@@ -193,6 +176,9 @@ int main(void)
                 // MODO MEDIDAS
                 // MODO INTERVALO
         int modo = 1;
+        int acrescenta = 1;
+        int decrementa = 1;
+
         pinMode(BUTTON_0, INPUT);           
 
 
@@ -204,8 +190,32 @@ int main(void)
                         delay(20);
                 }
                 if(modo == 1) mostrarMedidas();
-                if (modo == 0) mostrarSelecaoDeIntervalo();
-                delay(1000);            
+                if (modo == 0){
+                        mostrarSelecaoDeIntervalo(intervalo_medicao);
+                        if(digitalRead(BUTTON_1) == 0){
+                                intervalo_medicao = intervalo_medicao + 1000;
+                                printf("%d", intervalo_medicao);                                              
+                                delay(20);
+                                while(digitalRead(BUTTON_1) == 0); // aguarda enquato chave ainda esta pressionada           
+                                delay(20);                               
+
+                        }
+                        if(digitalRead(BUTTON_2) == 0){
+                                intervalo_medicao = intervalo_medicao - 1000;
+                                if (intervalo_medicao < 0){
+                                        intervalo_medicao = 0;
+                                }
+                                printf("%d", intervalo_medicao);                                              
+                                delay(20);
+                                while(digitalRead(BUTTON_2) == 0); // aguarda enquato chave ainda esta pressionada           
+                                delay(20);    
+
+                        } 
+                        //printf("%d", intervalo_medicao);                         
+                              
+                }
+                
+                delay(10);            
         }
 
         
