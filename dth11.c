@@ -209,8 +209,6 @@ int main(void)
                 // MODO MEDIDAS
                 // MODO INTERVALO
         int modo = 1;
-        int acrescenta = 1;
-        int decrementa = 1;
 
         pinMode(BUTTON_0, INPUT);           
 
