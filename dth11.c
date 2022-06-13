@@ -12,6 +12,7 @@
 #include "ads1115_rpi.h"
 //#include <MQTTClient.h>
 
+
 //USE WIRINGPI PIN NUMBERS
 #define LCD_RS  6               //Register select pin
 #define LCD_E   31               //Enable Pin
@@ -41,10 +42,12 @@
 
 int lcd;
 int dht11_dat[5] = {0, 0, 0, 0, 0};
-int intervalo_medicao = 0; //em ms
+int intervalo_medicao = 1000; //em s
 int temperatura = 0;
 int umidade = 0;
 int umidadeDecimal = 0;
+int p_canal0 = 0;
+int p_canal3 = 0;
 
 
 // void publish(MQTTClient client, char* topic, char* payload) {
@@ -74,18 +77,26 @@ int umidadeDecimal = 0;
 //     return 1;
 // }
 
-void potenciometro(){
+int potenciometro(){
+      
         if(openI2CBus("/dev/i2c-1") == -1)
-                printf(EXIT_FAILURE);
-    
+        {
+                return EXIT_FAILURE;
+        }
         setI2CSlave(0x48);
         while(1){
-                printf("CH_0 = %.2f V | ", readVoltage(0));
-                printf("CH_1 = %.2f V | ", readVoltage(1));
-                printf("CH_2 = %.2f V \n", readVoltage(2));
+                p_canal0 = (readVoltage(0) * 100)/3;
+                p_canal3 = (readVoltage(3) * 100)/3;
+
+                //
+                //printf("%d\n", p_canal0 );
+                //printf("%d\n",p_canal3 );
+               // printf("CH_0 = %.2f V | ", readVoltage(0));
+               // printf("CH_1 = %.2f V | ", readVoltage(3));
+                
         }
- 
-        printf(EXIT_SUCCESS);
+
+        return EXIT_SUCCESS;
 }
 void read_dht11_dat()
 {
@@ -147,19 +158,21 @@ void *getMeasurement(){
         while (1)
         {
                 read_dht11_dat();
-                //potenciometro();
+                potenciometro();
                 delay(intervalo_medicao); 
         }
 }
 
 void mostrarMedidas(){
-        lcdClear(lcd);
+        lcdClear(lcd);    
         lcdPosition(lcd, 0, 0);
-        lcdPrintf(lcd, "H: %d.%d %%", umidade, umidadeDecimal);
+        lcdPrintf(lcd, "H: %d.%d  T: %d C ", umidade, umidadeDecimal, temperatura); // printando sensor de umidade e temperatura no display lcd
         lcdPosition(lcd, 0, 1);
-        lcdPrintf(lcd, "T: %d.0 C", temperatura);
+        lcdPrintf(lcd, "P: %d L: %d", p_canal0, p_canal3); // printando sensor de pressão e luminosidade no display lcd
+
 }
 
+// Função onde é alterado o tempo de medição na interface local
 void mostrarSelecaoDeIntervalo(int tempo){
         lcdClear(lcd);
         lcdPosition(lcd, 0, 0);
@@ -221,8 +234,8 @@ int main(void)
                         }
                         if(digitalRead(BUTTON_2) == 0){
                                 intervalo_medicao = intervalo_medicao - 1000;
-                                if (intervalo_medicao < 0){
-                                        intervalo_medicao = 0;
+                                if (intervalo_medicao < 1000){
+                                        intervalo_medicao = 1000;
                                 }                                             
                                 delay(20);
                                 while(digitalRead(BUTTON_2) == 0); // aguarda enquato chave ainda esta pressionada           
@@ -232,7 +245,7 @@ int main(void)
                               
                 }
                 
-                delay(10);            
+                delay(500);            
         }
 
         
