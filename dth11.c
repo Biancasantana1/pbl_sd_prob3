@@ -4,6 +4,12 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <pthread.h>
+#include <unistd.h>
+#include <linux/i2c-dev.h>
+#include <sys/ioctl.h>
+#include <fcntl.h>
+ 
+#include "ads1115_rpi.h"
 //#include <MQTTClient.h>
 
 //USE WIRINGPI PIN NUMBERS
@@ -68,6 +74,19 @@ int umidadeDecimal = 0;
 //     return 1;
 // }
 
+void potenciometro(){
+        if(openI2CBus("/dev/i2c-1") == -1)
+                printf(EXIT_FAILURE);
+    
+        setI2CSlave(0x48);
+        while(1){
+                printf("CH_0 = %.2f V | ", readVoltage(0));
+                printf("CH_1 = %.2f V | ", readVoltage(1));
+                printf("CH_2 = %.2f V \n", readVoltage(2));
+        }
+ 
+        printf(EXIT_SUCCESS);
+}
 void read_dht11_dat()
 {
 
@@ -128,6 +147,7 @@ void *getMeasurement(){
         while (1)
         {
                 read_dht11_dat();
+                //potenciometro();
                 delay(intervalo_medicao); 
         }
 }
@@ -137,15 +157,15 @@ void mostrarMedidas(){
         lcdPosition(lcd, 0, 0);
         lcdPrintf(lcd, "H: %d.%d %%", umidade, umidadeDecimal);
         lcdPosition(lcd, 0, 1);
-        lcdPrintf(lcd, "Temp: %d.0 C", temperatura);
+        lcdPrintf(lcd, "T: %d.0 C", temperatura);
 }
 
 void mostrarSelecaoDeIntervalo(int tempo){
         lcdClear(lcd);
         lcdPosition(lcd, 0, 0);
-        lcdPrintf(lcd, "Medicao (em ms)");
+        lcdPrintf(lcd, "Medicao (em s)");
         lcdPosition(lcd, 0, 1);
-        lcdPrintf(lcd, "%d ms", tempo);
+        lcdPrintf(lcd, "%d s", tempo);
 }
 
 int main(void)
@@ -193,8 +213,7 @@ int main(void)
                 if (modo == 0){
                         mostrarSelecaoDeIntervalo(intervalo_medicao);
                         if(digitalRead(BUTTON_1) == 0){
-                                intervalo_medicao = intervalo_medicao + 1000;
-                                printf("%d", intervalo_medicao);                                              
+                                intervalo_medicao = intervalo_medicao + 1000;                                            
                                 delay(20);
                                 while(digitalRead(BUTTON_1) == 0); // aguarda enquato chave ainda esta pressionada           
                                 delay(20);                               
@@ -204,14 +223,12 @@ int main(void)
                                 intervalo_medicao = intervalo_medicao - 1000;
                                 if (intervalo_medicao < 0){
                                         intervalo_medicao = 0;
-                                }
-                                printf("%d", intervalo_medicao);                                              
+                                }                                             
                                 delay(20);
                                 while(digitalRead(BUTTON_2) == 0); // aguarda enquato chave ainda esta pressionada           
                                 delay(20);    
 
-                        } 
-                        //printf("%d", intervalo_medicao);                         
+                        }                        
                               
                 }
                 
